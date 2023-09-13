@@ -1,0 +1,197 @@
+---
+title: "Saskatoon W2 Test Data Code"
+author: "Daniel Fuller"
+date: '2023-06-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+library(readr)
+library(archive)
+library(devtools)
+library(inborutils)
+library(dbplyr)
+```
+
+# Creating directory structure
+
+Creating directory structure for interact test data
+
+```{}
+cd Documents
+mkdir interact_test_data
+cd interact_test_data
+
+##### Saskatoon Folders
+
+mkdir saskatoon montreal victoria vancouver
+cd saskatoon
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Montreal Folders
+
+cd ~/Documents/interact_test_data/montreal
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Vancouver Folders
+
+cd ~/Documents/interact_test_data/vancouver
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+
+##### Victoria Folders
+
+cd ~/Documents/interact_test_data/victoria
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+```
+
+# Data prep for Saskatoon
+
+# Wave 2 Saskatoon
+
+## Linkage files
+
+```{r}
+setwd("/Volumes/extender/all_data/")
+
+linkage_sk_w2 <- read_csv("/Volumes/extender/interact_test_data/saskatoon/wave_02/linkage.csv")
+
+linkage_sk_w2 <- arrange(linkage_sk_w2, ethica_id)
+linkage_sk_w2 <- slice(linkage_sk_w2, 1:6)
+
+write_csv(linkage_sk_w2, "/Volumes/extender/interact_test_data/saskatoon/wave_02/linkage_wave_02_saskatoon.csv")
+
+linkage_wave_02_saskatoon <- linkage_sk_w2$interact_id
+
+ethica_wave_02_saskatoon <- linkage_sk_w2$ethica_id
+```
+
+## Sensedoc 
+
+Creating folders for each participant that exists in the linkage file
+
+```{}
+base_path <- "/Users/dlf545/Documents/interact_test_data/saskatoon/wave_02/sensedoc"
+
+for (name in linkage_wave_02_saskatoon) {
+
+ path <- paste0(base_path, "/", name)
+ dir.create(path)
+
+}
+```
+
+Sensedoc data has format `interact_id_sensedoc_serial` these are columns that are available in the linkage file. In principle we only to link on `interact_id` but it's possible that a person has two sensedocs because one broke during their participation time. Also, because sensedoc as used with multiple participants there are many cases where sensedocs serial is repeated. 
+
+Because this is test data I'm just going to manually move the `.SDB` files to the correct folders. This will probably not be the case in real life... but that's not my problem. 
+
+OK done. 
+
+## Ethica Data Prep
+
+```{}
+base_path <- "/Users/dlf545/Documents/interact_test_data/saskatoon/wave_02/ethica"
+
+for (name in linkage_wave_02_saskatoon) {
+
+ path <- paste0(base_path, "/", name)
+ dir.create(path)
+
+}
+```
+
+Reading in a writing ethica data to specific participant folders
+
+```{r}
+### Testing with battery data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_battery.tar.gz", file = "2341_battery.csv")) %>%
+            filter(., user_id == ethica_wave_02_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('battery_wave_02', .y, '_ethica.csv')))
+```
+
+```{r}
+### GPS Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_gps.tar.gz", file = "2341_gps.csv")) %>%
+            filter(., user_id == ethica_wave_02_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('gps_wave_02', .y, '_ethica.csv')))
+gc()
+```
+
+```{r}
+### Bluetooth Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_bluetooth.tar.gz", file = "2341_bluetooth.csv")) %>%
+            filter(., user_id == ethica_wave_02_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('bluetooth_wave_02', .y, '_ethica.csv')))
+gc()
+```
+
+No Bluetooth data
+
+```{r}
+### Mbar Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_mbar.tar.gz", file = "2341_mb_activity_rec.csv")) %>%
+            filter(., user_id == ethica_wave_02_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('mbar_wave_02', .y, '_ethica.csv')))
+gc()
+```
+
+```{r}
+### Pedometer Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_pedometer.tar.gz", file = "2341_pedometer.csv")) %>%
+            filter(., user_id == ethica_wave_02_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('pedometer_wave_02', .y, '_ethica.csv')))
+gc()
+```
+
+## Accel Data
+
+```{r}
+sqlite_file_w2_sk <- "ethica_wave_02_saskatoon"
+table_file_w2_sk <- "accel_e_wave_02_saskatoon"
+
+inborutils::csv_to_sqlite(csv_file = "/Volumes/extender/all_data/2341_accelerometer.csv", 
+              sqlite_file_w2_sk, table_file_w2_sk, pre_process_size = 1000, 
+              chunk_size = 50000, show_progress_bar = TRUE)
+
+con <- DBI::dbConnect(SQLite(), dbname = "ethica_wave_02_saskatoon")
+accel_w2_ethica_sk <- tbl(con, "accel_e_wave_02_saskatoon")
+accel_w2_ethica_sk
+
+### Participant 5410
+
+accel_wave_02_ethica_5410 <- accel_w2_ethica_sk %>% 
+                                      filter(user_id == 5410) 
+accel_wave_02_ethica_5410 <- accel_wave_02_ethica_5410 %>% collect()
+
+write_csv(accel_wave_02_ethica_5410, "accel_wave_02_ethica_5410.csv")
+rm(accel_wave_02_ethica_5410)
+
+### Participant 1030
+
+accel_wave_01_ethica_1030 <- accel_w1_ethica_sk %>% 
+                                      filter(user_id == 1030) 
+accel_wave_01_ethica_1030 <- accel_wave_01_ethica_1030 %>% collect()
+
+write_csv(accel_wave_01_ethica_1030, "accel_wave_02_ethica_1030.csv")
+rm(accel_wave_01_ethica_1030)
+```

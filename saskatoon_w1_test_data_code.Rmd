@@ -1,0 +1,209 @@
+---
+title: "Saskatoon W1 Test Data Code"
+author: "Daniel Fuller"
+date: '2023-06-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+library(readr)
+library(archive)
+library(devtools)
+library(inborutils)
+library(dbplyr)
+```
+
+# Creating directory structure
+
+Creating directory structure for interact test data
+
+```{}
+cd Documents
+mkdir interact_test_data
+cd interact_test_data
+
+##### Saskatoon Folders
+
+mkdir saskatoon montreal victoria vancouver
+cd saskatoon
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Montreal Folders
+
+cd ~/Documents/interact_test_data/montreal
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Vancouver Folders
+
+cd ~/Documents/interact_test_data/vancouver
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+
+##### Victoria Folders
+
+cd ~/Documents/interact_test_data/victoria
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+```
+
+# Data prep for Saskatoon
+
+# Wave 1 Saskatoon
+
+## Linkage files
+
+```{r}
+setwd("/Volumes/extender/all_data/")
+
+linkage_sk_w1 <- read_csv("/Users/dlf545/Documents/interact_test_data/saskatoon/wave_01/linkage.csv", n_max = 6)
+
+write_csv(linkage_sk_w1, "/Users/dlf545/Documents/interact_test_data/saskatoon/wave_01/linkage_wave_01_saskatoon.csv")
+
+linkage_wave_01_saskatoon <- linkage_sk_w1$interact_id
+
+ethica_wave_01_saskatoon <- linkage_sk_w1$ethica_id
+```
+
+## Creating folders
+
+```{}
+base_path <- "/Users/dlf545/Documents/interact_test_data/saskatoon/wave_01/sensedoc"
+
+for (name in linkage_wave_01_saskatoon) {
+
+ path <- paste0(base_path, "/", name)
+ dir.create(path)
+
+}
+```
+
+## Ethica Prep
+
+Creating folders for each participant that exists in the linkage file
+
+```{}
+base_path <- "/Users/dlf545/Documents/interact_test_data/saskatoon/wave_01/ethica"
+
+for (name in linkage_wave_01_saskatoon) {
+
+ path <- paste0(base_path, "/", name)
+ dir.create(path)
+
+}
+```
+
+Reading in a writing ethica data to specific participant folders
+
+```{r}
+### Testing with battery data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_battery.tar.gz", file = "1318_battery.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('battery_wave_01', .y, '_ethica.csv')))
+```
+
+```{r}
+### GPS Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_gps.tar.gz", file = "1318_gps.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('gps_wave_01', .y, '_ethica.csv')))
+gc()
+```
+
+```{r}
+### Bluetooth Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_bluetooth.tar.gz", file = "1318_bluetooth.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('bluetooth_wave_01', .y, '_ethica.csv')))
+gc()
+```
+
+No Bluetooth data
+
+```{r}
+### Mbar Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_mbar.tar.gz", file = "1318_mb_activity_rec.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('mbar_wave_01', .y, '_ethica.csv')))
+gc()
+```
+
+```{r}
+### Pedometer Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_pedometer.tar.gz", file = "1318_pedometer.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('pedometer_wave_01', .y, '_ethica.csv')))
+gc()
+```
+
+```{r}
+### Pedometer Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_wifi.tar.gz", file = "1318_wifi.csv")) %>%
+            filter(., user_id == ethica_wave_01_saskatoon) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('wifi_wave_01', .y, '_ethica.csv')))
+gc()
+```
+
+## Accel Data
+
+Previous code is too slow with GPS and uses too much memory. Need to create sql tables and read from those.
+
+```{r}
+sqlite_file <- "ethica_wave_01_saskatoon"
+table_name <- "accel_e_wave_01_saskatoon"
+
+inborutils::csv_to_sqlite(csv_file = "/Volumes/extender/all_data/1318_accelerometer.csv", 
+              sqlite_file, table_name, pre_process_size = 1000, 
+              chunk_size = 50000, show_progress_bar = TRUE)
+
+con <- DBI::dbConnect(SQLite(), dbname = "ethica_wave_01_saskatoon")
+accel_w1_ethica_sk <- tbl(con, "accel_e_wave_01_saskatoon")
+accel_w1_ethica_sk
+
+### Participant 6407
+
+accel_wave_01_ethica_6407 <- accel_w1_ethica_sk %>% 
+                                      filter(user_id == 6407) 
+accel_wave_01_ethica_6407 <- accel_wave_01_ethica_6407 %>% collect()
+
+write_csv(accel_wave_01_ethica_6407, "accel_wave_01_ethica_6407.csv")
+rm(accel_wave_01_ethica_6407)
+
+### Participant 6396
+
+accel_wave_01_ethica_6396 <- accel_w1_ethica_sk %>% 
+                                      filter(user_id == 6396) 
+accel_wave_01_ethica_6396 <- accel_wave_01_ethica_6396 %>% collect()
+
+write_csv(accel_wave_01_ethica_6396, "accel_wave_01_ethica_6396.csv")
+rm(accel_wave_01_ethica_6396)
+
+### Participant 6403
+
+accel_wave_01_ethica_6403 <- accel_w1_ethica_sk %>% 
+                                      filter(user_id == 6403) 
+accel_wave_01_ethica_6403 <- accel_wave_01_ethica_6403 %>% collect()
+
+write_csv(accel_wave_01_ethica_6403, "accel_wave_01_ethica_6403.csv")
+rm(accel_wave_01_ethica_6403)
+
+```

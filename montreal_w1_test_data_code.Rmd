@@ -1,0 +1,249 @@
+---
+title: "Montreal W1 Test Data Code"
+author: "Daniel Fuller"
+date: '2023-06-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+library(readr)
+library(archive)
+library(devtools)
+library(inborutils)
+library(dbplyr)
+```
+
+# Creating directory structure
+
+Creating directory structure for interact test data
+
+```{}
+cd Documents
+mkdir interact_test_data
+cd interact_test_data
+
+##### Saskatoon Folders
+
+mkdir saskatoon montreal victoria vancouver
+cd saskatoon
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Montreal Folders
+
+cd ~/Documents/interact_test_data/montreal
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+##### Vancouver Folders
+
+cd ~/Documents/interact_test_data/vancouver
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+
+
+##### Victoria Folders
+
+cd ~/Documents/interact_test_data/victoria
+ls 
+mkdir wave_01 wave_02 wave_03 wave_04
+
+mkdir wave_01/ethica wave_01/sensedoc wave_02/ethica wave_02/sensedoc wave_03/ethica wave_03/sensedoc wave_04/ethica wave_04/sensedoc
+```
+
+# Data prep for Montreal
+
+## Wave 1 Linkage files
+
+```{r}
+setwd("/Volumes/extender/all_data/")
+
+linkage_mtl_w1 <- read_csv("/Volumes/extender/interact_test_data/montreal/wave_01/linkage_wave_01_montreal.csv")
+
+linkage_wave_01_montreal <- linkage_mtl_w1$interact_id
+
+ethica_wave_01_montreal <- linkage_mtl_w1$ethica_id
+```
+
+## Sensedoc 
+
+Creating folders for each participant that exists in the linkage file
+
+```{}
+base_path <- "/Users/dlf545/Documents/interact_test_data/montreal/wave_01/sensedoc"
+
+for (name in linkage_wave_01_montreal) {
+
+ path <- paste0(base_path, "/", name)
+ dir.create(path)
+
+}
+```
+
+## Ethica Data
+
+Montreal Wave 1 in English is study 395 and French is 396
+
+```{r}
+### Testing with battery data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_battery.tar.gz", file = "395_battery.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('battery_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_battery.tar.gz", file = "396_battery.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('battery_wave_01_f', .y, '_ethica.csv')))
+```
+
+```{r}
+### GPS Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_gps.tar.gz", file = "395_gps.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('gps_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_gps.tar.gz", file = "396_gps.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('gps_wave_01_f', .y, '_ethica.csv')))
+
+gc()
+```
+
+```{r}
+### Bluetooth Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_bluetooth.tar.gz", file = "395_bluetooth.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('bluetooth_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_bluetooth.tar.gz", file = "396_bluetooth.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('bluetooth_wave_01_f', .y, '_ethica.csv')))
+
+gc()
+```
+
+No Bluetooth data
+
+```{r}
+### Mbar Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_mbar.tar.gz", file = "395_mb_activity_rec.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('mbar_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_mbar.tar.gz", file = "396_mb_activity_rec.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('mbar_wave_01_f', .y, '_ethica.csv')))
+
+gc()
+```
+
+```{r}
+### Pedometer Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_pedometer.tar.gz", file = "395_pedometer.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('pedometer_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_pedometer.tar.gz", file = "396_pedometer.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('pedometer_wave_01_f', .y, '_ethica.csv')))
+
+gc()
+```
+
+```{r}
+### Wifi Data
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_wifi.tar.gz", file = "395_wifi.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('wifi_wave_01_e', .y, '_ethica.csv')))
+
+read_csv(archive_read("/Volumes/extender/all_data/all_studies_wifi.tar.gz", file = "396_wifi.csv")) %>%
+            filter(., user_id == ethica_wave_01_montreal) %>%
+            group_split(user_id) %>%
+            iwalk(~ write_csv(.x, str_c('wifi_wave_01_f', .y, '_ethica.csv')))
+
+gc()
+```
+
+### Accel Data
+
+
+```{r}
+setwd("/Volumes/extender/all_data")
+
+montreal_w1_db <- "montreal_w1_db"
+montreal_w1_table <- "montreal_w1_table"
+
+inborutils::csv_to_sqlite(csv_file = "/Volumes/extender/all_data/data_1.csv", 
+              montreal_w1_db, montreal_w1_table, pre_process_size = 1000, 
+              chunk_size = 50000, show_progress_bar = TRUE)
+
+montreal_w1_db_1 <- "montreal_w1_db_1"
+montreal_w1_table_1 <- "montreal_w1_table_1"
+
+inborutils::csv_to_sqlite(csv_file = "/Volumes/extender/all_data/data_2.csv", 
+              montreal_w1_db_1, montreal_w1_table_1, pre_process_size = 1000, 
+              chunk_size = 50000, show_progress_bar = TRUE)
+
+con <- DBI::dbConnect(SQLite(), dbname = "montreal_w1_db_1")
+accel_w1_ethica_mtl <- tbl(con, "montreal_w1_table_1")
+accel_w1_ethica_mtl
+```
+
+```{r}
+### Participant 5542
+
+accel_wave_01_ethica_5542 <- accel_w1_ethica_mtl %>% 
+                                      filter(user_id == 5542) 
+accel_wave_01_ethica_5542 <- accel_wave_01_ethica_5542 %>% collect()
+
+write_csv(accel_wave_01_ethica_5542, "accel_wave_01_ethica_5542.csv")
+rm(accel_wave_01_ethica_5542)
+
+### Participant 5547
+
+accel_wave_01_ethica_5547 <- accel_w1_ethica_mtl %>% 
+                                      filter(user_id == 5547) 
+
+accel_wave_01_ethica_5547 <- accel_wave_01_ethica_5547 %>% collect()
+
+write_csv(accel_wave_01_ethica_5547, "accel_wave_01_ethica_5547.csv")
+rm(accel_wave_01_ethica_5547)
+
+### Participant 5496
+
+accel_wave_01_ethica_5496 <- accel_w1_ethica_mtl %>% 
+                                      filter(user_id == 5496) 
+accel_wave_01_ethica_5496 <- accel_wave_01_ethica_5496 %>% collect()
+
+write_csv(accel_wave_01_ethica_5496, "accel_wave_01_ethica_5496.csv")
+rm(accel_wave_01_ethica_5496)
+
+### Participant 5493
+
+accel_wave_01_ethica_5493 <- accel_w1_ethica_mtl %>% 
+                                      filter(user_id == 5493) 
+
+accel_wave_01_ethica_5493 <- accel_wave_01_ethica_5493 %>% collect()
+
+write_csv(accel_wave_01_ethica_5493, "accel_wave_01_ethica_5493.csv")
+rm(accel_wave_01_ethica_5493)
+```
